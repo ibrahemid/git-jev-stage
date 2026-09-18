@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createGitRunner, type GitRunner } from "../../src/git/runGit.js";
 
 export const HERMETIC_GIT_ENV: Record<string, string> = {
@@ -89,4 +90,15 @@ export function createTestGitRunner(): GitRunner {
       return runner.run(args, { ...options, env: { ...HERMETIC_GIT_ENV, ...options?.env } });
     },
   };
+}
+
+const DEMO_BASE = fileURLToPath(new URL("../fixtures/demo/base", import.meta.url));
+const DEMO_MODIFIED = fileURLToPath(new URL("../fixtures/demo/modified", import.meta.url));
+
+export function createDemoRepo(prefix = "git-jev-stage-demo-"): string {
+  const dir = mkRepo(prefix);
+  cpSync(DEMO_BASE, dir, { recursive: true });
+  commitAll(dir, "base");
+  cpSync(DEMO_MODIFIED, dir, { recursive: true });
+  return dir;
 }

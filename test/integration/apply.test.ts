@@ -11,7 +11,7 @@ import {
 import { basename, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { IndexLockedError, PatchApplyError, StaleSnapshotError } from "../../src/errors.js";
-import { applyPatchToIndex, applySelection } from "../../src/git/applySelection.js";
+import { applyPatchToIndex, stageHunks } from "../../src/git/applySelection.js";
 import { composePatch } from "../../src/git/composePatch.js";
 import { captureSnapshot, DIFF_ARGS } from "../../src/git/snapshot.js";
 import type { Hunk, Snapshot } from "../../src/types.js";
@@ -121,7 +121,7 @@ function capture(cwd: string): Promise<Snapshot> {
 }
 
 function stage(snapshot: Snapshot, ids: Iterable<string>): Promise<Buffer> {
-  return applySelection(snapshot, new Set(ids), createTestGitRunner());
+  return stageHunks(snapshot, new Set(ids), createTestGitRunner());
 }
 
 function loginSource(options: { auth: boolean; log: boolean }): string {

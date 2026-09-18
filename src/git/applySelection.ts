@@ -81,7 +81,7 @@ export async function applyPatchToIndex({
   discard(tempPath);
 }
 
-export async function applySelection(
+export async function stageHunks(
   snapshot: Snapshot,
   selectedIds: ReadonlySet<string>,
   git: GitRunner,
@@ -192,7 +192,7 @@ function track(path: string): void {
   ownedPaths.add(path);
   if (!exitHookInstalled) {
     exitHookInstalled = true;
-    process.on("exit", removeOwnedPaths);
+    process.on("exit", cleanupOwnedPaths);
   }
 }
 
@@ -205,7 +205,7 @@ function discard(path: string): void {
   removeQuietly(path);
 }
 
-function removeOwnedPaths(): void {
+export function cleanupOwnedPaths(): void {
   for (const path of [...ownedPaths]) {
     ownedPaths.delete(path);
     removeQuietly(path);

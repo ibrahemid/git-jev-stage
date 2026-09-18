@@ -3,7 +3,10 @@ import { join } from "node:path";
 
 const ENV_LINE = /^([A-Za-z_][A-Za-z0-9_]*)[ \t]*=(.*)$/;
 
-export function loadDotEnv(dir: string): number {
+export function loadDotEnv(
+  dir: string,
+  env: Record<string, string | undefined> = process.env,
+): number {
   const contents = readDotEnv(join(dir, ".env"));
   if (contents === undefined) {
     return 0;
@@ -21,10 +24,10 @@ export function loadDotEnv(dir: string): number {
     }
     const key = match[1];
     const rawValue = match[2];
-    if (key === undefined || rawValue === undefined || process.env[key] !== undefined) {
+    if (key === undefined || rawValue === undefined || env[key] !== undefined) {
       continue;
     }
-    process.env[key] = unquote(rawValue.trim());
+    env[key] = unquote(rawValue.trim());
     loaded += 1;
   }
   return loaded;

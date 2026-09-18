@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 import { UsageError } from "../errors.js";
+import { DEFAULT_THRESHOLD } from "../selection/policy.js";
 
 export interface CliOptions {
   intent: string;
@@ -13,7 +14,7 @@ export interface CliOptions {
   version: boolean;
 }
 
-export const DEFAULT_THRESHOLD = 0.6;
+export { DEFAULT_THRESHOLD };
 
 const PARSE_CONFIG = {
   allowPositionals: true,
