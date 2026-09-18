@@ -1,5 +1,5 @@
 import { summarizeSelection } from "../git/composePatch.js";
-import type { Decision, FileKind, HunkDecision, Plan } from "../types.js";
+import type { Decision, FileKind, HunkDecision, Plan, Snapshot } from "../types.js";
 
 const RESET = "[0m";
 const GREEN = "[32m";
@@ -24,6 +24,8 @@ const FILE_MARKS: Readonly<Record<FileKind, string>> = Object.freeze({
 });
 
 const PROBABILITY_ORDER: readonly Decision[] = Object.freeze(["include", "exclude", "mixed"]);
+
+const SKIPPED_INSTRUCTION = "these changes cannot be staged by hunk; stage them with git add";
 
 export interface RenderPlanOptions {
   plan: Plan;
@@ -51,9 +53,7 @@ export function renderPlan({ plan, includeIds, color }: RenderPlanOptions): stri
     }
   }
 
-  for (const skipped of plan.snapshot.skipped) {
-    lines.push(`skipped: ${skipped.path} (${skipped.reason})`);
-  }
+  lines.push(...skippedLines(plan.snapshot.skipped));
 
   const summary = summarizeSelection(plan.snapshot.files, includeIds);
   lines.push(
@@ -61,6 +61,21 @@ export function renderPlan({ plan, includeIds, color }: RenderPlanOptions): stri
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+export function renderSkipped(skipped: Snapshot["skipped"]): string {
+  const lines = skippedLines(skipped);
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+}
+
+function skippedLines(skipped: Snapshot["skipped"]): string[] {
+  if (skipped.length === 0) {
+    return [];
+  }
+  return [
+    ...skipped.map((entry) => `skipped: ${entry.path} (${entry.reason})`),
+    SKIPPED_INSTRUCTION,
+  ];
 }
 
 export function renderPatch(patch: Buffer, write: (bytes: Buffer) => void): void {

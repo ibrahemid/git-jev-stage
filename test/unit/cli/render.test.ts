@@ -61,6 +61,7 @@ describe("renderPlan", () => {
         "M src/styles/app.css",
         `  ? ${css} @@ -1,2 +1,2 @@  include 0.40  exclude 0.20  mixed 0.40  low-confidence`,
         "skipped: docs/notes.md (mode-only)",
+        "these changes cannot be staged by hunk; stage them with git add",
         "will stage: 1 hunk, 1 file (+1 -0)",
         "",
       ].join("\n"),

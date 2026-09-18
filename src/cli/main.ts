@@ -18,7 +18,7 @@ import { type CliOptions, parseCliArgs, usageText } from "./args.js";
 import { type JsonDocumentOptions, renderJsonDocument } from "./json.js";
 import { loadDotEnvFromTree } from "./loadEnv.js";
 import { askHunk, confirm, NO_TTY_MESSAGE } from "./prompt.js";
-import { count, renderPatch, renderPlan, shouldColor } from "./render.js";
+import { count, renderPatch, renderPlan, renderSkipped, shouldColor } from "./render.js";
 
 const SIGINT_EXIT_CODE = 130;
 const SIGTERM_EXIT_CODE = 143;
@@ -114,6 +114,7 @@ async function stage(options: CliOptions, io: CliIo): Promise<void> {
   });
 
   if (plan.snapshot.files.length === 0) {
+    report(renderSkipped(plan.snapshot.skipped));
     if (options.json) {
       io.stdout(renderJsonDocument({ plan, applied: false, stagedHunkIds: [], mixedHunkIds: [] }));
       return;
