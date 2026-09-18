@@ -1,6 +1,25 @@
 {
   "name": "git-jev-stage",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Stage the diff hunks that match a sentence.",
+  "keywords": [
+    "git",
+    "staging",
+    "hunks",
+    "git-add",
+    "typesafe",
+    "jev",
+    "claude-code"
+  ],
+  "author": "Ibrahem",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibrahemid/git-jev-stage.git"
+  },
+  "homepage": "https://github.com/ibrahemid/git-jev-stage#readme",
+  "bugs": {
+    "url": "https://github.com/ibrahemid/git-jev-stage/issues"
+  },
   "private": false,
   "license": "MIT",
   "type": "module",
