@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
 const ENV_LINE = /^([A-Za-z_][A-Za-z0-9_]*)[ \t]*=(.*)$/;
 
@@ -54,4 +54,24 @@ function unquote(value: string): string {
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error;
+}
+
+export function loadDotEnvFromTree(
+  cwd: string,
+  env: Record<string, string | undefined> = process.env,
+): number {
+  let dir = resolve(cwd);
+  for (;;) {
+    if (existsSync(join(dir, ".env"))) {
+      return loadDotEnv(dir, env);
+    }
+    if (existsSync(join(dir, ".git"))) {
+      return 0;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) {
+      return 0;
+    }
+    dir = parent;
+  }
 }

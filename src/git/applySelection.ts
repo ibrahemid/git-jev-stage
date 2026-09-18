@@ -5,11 +5,13 @@ import {
   copyFileSync,
   fsyncSync,
   openSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
   writeSync,
 } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { IndexLockedError, PatchApplyError, StaleSnapshotError } from "../errors.js";
 import type { Snapshot } from "../types.js";
 import { composePatch } from "./composePatch.js";
@@ -19,7 +21,9 @@ import { DIFF_ARGS, readIndexBytes } from "./snapshot.js";
 
 const LOCK_SUFFIX = ".lock";
 const LOCK_MODE = 0o644;
+const TEMP_MARKER = ".jev-stage-";
 const TEMP_SUFFIX_BYTES = 8;
+const TEMP_SUFFIX = /^(\d+)-[0-9a-f]+$/;
 
 export interface ApplyPatchToIndexOptions {
   snapshot: Snapshot;
@@ -45,6 +49,8 @@ export async function applyPatchToIndex({
   if (patch.length === 0) {
     return;
   }
+
+  sweepAbandonedTempIndexes(snapshot.indexPath);
 
   const tempPath = await createTempIndex(snapshot, git);
   const apply: TempIndexApply = { git, snapshot, patch, tempPath };
@@ -91,9 +97,45 @@ export async function stageHunks(
   return patch;
 }
 
+function sweepAbandonedTempIndexes(indexPath: string): void {
+  const directory = dirname(indexPath);
+  const prefix = `${basename(indexPath)}${TEMP_MARKER}`;
+
+  let names: string[];
+  try {
+    names = readdirSync(directory);
+  } catch {
+    return;
+  }
+
+  for (const name of names) {
+    if (!name.startsWith(prefix)) {
+      continue;
+    }
+    const match = TEMP_SUFFIX.exec(name.slice(prefix.length));
+    if (match === null) {
+      continue;
+    }
+    const pid = Number(match[1]);
+    if (!Number.isSafeInteger(pid) || pid <= 0 || isProcessAlive(pid)) {
+      continue;
+    }
+    removeQuietly(join(directory, name));
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return !hasErrnoCode(error, "ESRCH");
+  }
+}
+
 async function createTempIndex(snapshot: Snapshot, git: GitRunner): Promise<string> {
   const suffix = randomBytes(TEMP_SUFFIX_BYTES).toString("hex");
-  const tempPath = `${snapshot.indexPath}.jev-stage-${process.pid}-${suffix}`;
+  const tempPath = `${snapshot.indexPath}${TEMP_MARKER}${process.pid}-${suffix}`;
   track(tempPath);
 
   try {

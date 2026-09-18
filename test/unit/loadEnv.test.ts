@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadDotEnv } from "../../src/cli/loadEnv.js";
+import { loadDotEnv, loadDotEnvFromTree } from "../../src/cli/loadEnv.js";
 
 const KEYS = ["JEV_TEST_A", "JEV_TEST_B", "JEV_TEST_C", "JEV_TEST_QUOTED", "JEV_TEST_EMPTY"];
 
@@ -98,5 +98,57 @@ describe("loadDotEnv", () => {
     writeDotEnv("1BAD=x\nJEV-TEST=x\nJEV_TEST_A=one\n");
     expect(loadDotEnv(dir)).toBe(1);
     expect(process.env.JEV_TEST_A).toBe("one");
+  });
+});
+
+describe("loadDotEnvFromTree", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "git-jev-stage-tree-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("loads the repo root .env from a subdirectory", () => {
+    mkdirSync(join(root, "repo", ".git"), { recursive: true });
+    mkdirSync(join(root, "repo", "src", "deep"), { recursive: true });
+    writeFileSync(join(root, "repo", ".env"), "TYPESAFE_API_KEY=from-root\n");
+    const env: Record<string, string | undefined> = {};
+
+    expect(loadDotEnvFromTree(join(root, "repo", "src", "deep"), env)).toBe(1);
+    expect(env.TYPESAFE_API_KEY).toBe("from-root");
+  });
+
+  it("prefers the nearest .env", () => {
+    mkdirSync(join(root, "repo", ".git"), { recursive: true });
+    mkdirSync(join(root, "repo", "src"), { recursive: true });
+    writeFileSync(join(root, "repo", ".env"), "TYPESAFE_API_KEY=from-root\n");
+    writeFileSync(join(root, "repo", "src", ".env"), "TYPESAFE_API_KEY=from-src\n");
+    const env: Record<string, string | undefined> = {};
+
+    loadDotEnvFromTree(join(root, "repo", "src"), env);
+    expect(env.TYPESAFE_API_KEY).toBe("from-src");
+  });
+
+  it("stops at the repo root", () => {
+    writeFileSync(join(root, ".env"), "TYPESAFE_API_KEY=outside\n");
+    mkdirSync(join(root, "repo", ".git"), { recursive: true });
+    mkdirSync(join(root, "repo", "src"), { recursive: true });
+    const env: Record<string, string | undefined> = {};
+
+    expect(loadDotEnvFromTree(join(root, "repo", "src"), env)).toBe(0);
+    expect(env.TYPESAFE_API_KEY).toBeUndefined();
+  });
+
+  it("never overrides values already in the environment", () => {
+    mkdirSync(join(root, "repo", ".git"), { recursive: true });
+    writeFileSync(join(root, "repo", ".env"), "TYPESAFE_API_KEY=from-file\n");
+    const env: Record<string, string | undefined> = { TYPESAFE_API_KEY: "from-shell" };
+
+    expect(loadDotEnvFromTree(join(root, "repo"), env)).toBe(0);
+    expect(env.TYPESAFE_API_KEY).toBe("from-shell");
   });
 });

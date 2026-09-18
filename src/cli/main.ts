@@ -16,7 +16,7 @@ import type { Decision, Hunk, HunkDecision, Plan } from "../types.js";
 import { VERSION } from "../version.js";
 import { type CliOptions, parseCliArgs, usageText } from "./args.js";
 import { type JsonDocumentOptions, renderJsonDocument } from "./json.js";
-import { loadDotEnv } from "./loadEnv.js";
+import { loadDotEnvFromTree } from "./loadEnv.js";
 import { askHunk, confirm, NO_TTY_MESSAGE } from "./prompt.js";
 import { count, renderPatch, renderPlan, shouldColor } from "./render.js";
 
@@ -39,7 +39,7 @@ export interface CliIo {
 
 export async function run(argv: readonly string[], io: CliIo): Promise<number> {
   try {
-    loadDotEnv(io.cwd, io.env);
+    loadDotEnvFromTree(io.cwd, io.env);
     const options = parseCliArgs(argv);
 
     if (options.help) {

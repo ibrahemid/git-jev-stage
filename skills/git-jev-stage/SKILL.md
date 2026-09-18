@@ -1,7 +1,7 @@
 ---
 name: git-jev-stage
 description: Stage only the diff hunks that match a sentence, with git jev-stage. Use when asked to commit or stage part of the working tree ("commit just the auth fix", "stage only the tests", "leave the debug logging out").
-allowed-tools: Bash(git jev-stage *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git add *)
+allowed-tools: Bash(git jev-stage *) Bash(git-jev-stage *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git add *)
 ---
 
 `git jev-stage "<sentence>"` classifies every unstaged hunk against the sentence and stages the ones that belong. It never commits, never edits files, and never stages a hunk it is unsure about.
