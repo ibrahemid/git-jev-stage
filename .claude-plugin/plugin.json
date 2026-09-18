@@ -1,6 +1,6 @@
 {
   "name": "git-jev-stage",
-  "description": "Stage the diff hunks that match a sentence.",
+  "description": "Select Git changes for staging with a plain-language description.",
   "version": "0.1.0",
   "author": {
     "name": "Ibrahem"

@@ -5,7 +5,7 @@
     {
       "name": "git-jev-stage",
       "source": "./",
-      "description": "Stage the diff hunks that match a sentence."
+      "description": "Select Git changes for staging with a plain-language description."
     }
   ]
 }
