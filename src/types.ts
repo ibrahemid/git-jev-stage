@@ -6,7 +6,6 @@ export type DecisionSource =
   | "missing"
   | "invalid"
   | "too-large"
-  | "provider-error"
   | "manual"
   | "no-provider";
 
