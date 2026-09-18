@@ -1,0 +1,11 @@
+{
+  "name": "git-jev-stage",
+  "owner": { "name": "Ibrahem" },
+  "plugins": [
+    {
+      "name": "git-jev-stage",
+      "source": "./",
+      "description": "Stage the diff hunks that match a sentence."
+    }
+  ]
+}

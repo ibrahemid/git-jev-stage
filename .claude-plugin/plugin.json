@@ -1,0 +1,10 @@
+{
+  "name": "git-jev-stage",
+  "description": "Stage the diff hunks that match a sentence.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ibrahem"
+  },
+  "license": "MIT",
+  "keywords": ["git", "staging", "hunks", "typesafe", "jev"]
+}
