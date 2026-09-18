@@ -12,7 +12,7 @@ import { JevStageError, MissingApiKeyError, UsageError } from "../errors.js";
 import { cleanupOwnedPaths } from "../git/applySelection.js";
 import { composePatch, summarizeSelection } from "../git/composePatch.js";
 import { applySelection, planSelection } from "../library.js";
-import type { Decision, Hunk, Plan } from "../types.js";
+import type { Decision, Hunk, HunkDecision, Plan } from "../types.js";
 import { VERSION } from "../version.js";
 import { type CliOptions, parseCliArgs, usageText } from "./args.js";
 import { type JsonDocumentOptions, renderJsonDocument } from "./json.js";
@@ -100,7 +100,7 @@ async function stage(options: CliOptions, io: CliIo): Promise<void> {
   }
 
   const provider = resolveProvider(io.env);
-  if (provider === undefined) {
+  if (provider === undefined && (options.yes || options.json)) {
     throw new MissingApiKeyError();
   }
 
@@ -122,7 +122,7 @@ async function stage(options: CliOptions, io: CliIo): Promise<void> {
     return;
   }
 
-  const decided = plan;
+  const decided = provider === undefined && interactive ? await decideByHand(plan, io) : plan;
   const includeIds = new Set(idsWithDecision(decided, "include"));
   report(
     renderPlan({
@@ -193,6 +193,22 @@ function plannedDocument(plan: Plan, includeIds: ReadonlySet<string>): JsonDocum
     stagedHunkIds: [],
     mixedHunkIds: idsWithDecision(plan, "mixed").filter((id) => !includeIds.has(id)),
   };
+}
+
+async function decideByHand(plan: Plan, io: CliIo): Promise<Plan> {
+  io.stdout("no TYPESAFE_API_KEY, deciding by hand\n");
+  const decisions = new Map<string, HunkDecision>();
+  for (const file of plan.snapshot.files) {
+    for (const hunk of file.hunks) {
+      const wanted = await askHunk(hunk, io);
+      decisions.set(hunk.id, {
+        hunkId: hunk.id,
+        decision: wanted ? "include" : "exclude",
+        source: "manual",
+      });
+    }
+  }
+  return { ...plan, decisions };
 }
 
 function resolveProvider(env: Record<string, string | undefined>): JevProvider | undefined {
