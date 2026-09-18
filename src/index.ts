@@ -1,6 +1,5 @@
+export * from "./core/index.js";
 export * from "./errors.js";
-export { applyPatchToIndex, applySelection } from "./git/applySelection.js";
-export { composePatch, summarizeSelection } from "./git/composePatch.js";
 export { parseUnifiedDiff } from "./git/parseDiff.js";
 export type { GitRunner } from "./git/runGit.js";
 export { createGitRunner } from "./git/runGit.js";
