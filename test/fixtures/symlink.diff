@@ -1,0 +1,17 @@
+diff --git a/docs/link b/docs/link
+index 1111111111111111111111111111111111111111..3333333333333333333333333333333333333333 120000
+--- a/docs/link
++++ b/docs/link
+@@ -1 +1 @@
+-target1
+\ No newline at end of file
++target2
+\ No newline at end of file
+diff --git a/docs/newlink b/docs/newlink
+new file mode 120000
+index 0000000000000000000000000000000000000000..4444444444444444444444444444444444444444
+--- /dev/null
++++ b/docs/newlink
+@@ -0,0 +1 @@
++newtarget
+\ No newline at end of file

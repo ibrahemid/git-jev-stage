@@ -1,0 +1,16 @@
+diff --git a/src/one.ts b/src/one.ts
+index 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644
+--- a/src/one.ts
++++ b/src/one.ts
+@@ -1,2 +1,2 @@
+ const shared = 1;
+-const value = 2;
++const value = 3;
+diff --git a/src/two.ts b/src/two.ts
+index 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644
+--- a/src/two.ts
++++ b/src/two.ts
+@@ -1,2 +1,2 @@
+ const shared = 1;
+-const value = 2;
++const value = 3;

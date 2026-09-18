@@ -1,0 +1,22 @@
+diff --git "a/src/we\303\244rd name\twith\ttab.ts" "b/src/we\303\244rd name\twith\ttab.ts"
+index 7777777777777777777777777777777777777777..8888888888888888888888888888888888888888 100644
+--- "a/src/we\303\244rd name\twith\ttab.ts"	
++++ "b/src/we\303\244rd name\twith\ttab.ts"	
+@@ -1 +1 @@
+-old
++new
+diff --git a/docs/my file.md b/docs/my file.md
+index 9999999999999999999999999999999999999999..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 100644
+--- a/docs/my file.md	
++++ b/docs/my file.md	
+@@ -1,2 +1,2 @@
+ # title
+-body
++body two
+diff --git "a/src/say \"hi\".ts" "b/src/say \"hi\".ts"
+index bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..cccccccccccccccccccccccccccccccccccccccc 100644
+--- "a/src/say \"hi\".ts"	
++++ "b/src/say \"hi\".ts"	
+@@ -1 +1 @@
+-say
++said

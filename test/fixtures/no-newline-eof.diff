@@ -1,0 +1,10 @@
+diff --git a/src/tail.ts b/src/tail.ts
+index 5555555555555555555555555555555555555555..6666666666666666666666666666666666666666 100644
+--- a/src/tail.ts
++++ b/src/tail.ts
+@@ -1,2 +1,2 @@
+ const first = 1;
+-const last = 2;
+\ No newline at end of file
++const last = 3;
+\ No newline at end of file

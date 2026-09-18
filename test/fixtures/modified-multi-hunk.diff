@@ -1,0 +1,19 @@
+diff --git a/src/app.ts b/src/app.ts
+index 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -1,6 +1,7 @@
+ import { a } from "./a.js";
+-import { b } from "./b.js";
++import { b } from "./b2.js";
++import { c } from "./c.js";
+ 
+ export function app() {
+   return a + b;
+@@ -20,5 +21,5 @@ export function app() {
+   const x = 1;
+   const y = 2;
+-  return x + y;
++  return x * y;
+   // tail
+ }
