@@ -154,6 +154,7 @@ describe("captureSnapshot", () => {
   });
 
   it("returns no files for a clean work tree", async () => {
+    delete process.env.GIT_INDEX_FILE;
     const repo = newRepo();
     writeFile(repo, "a.txt", "a\n");
     commitAll(repo, "init");
@@ -161,6 +162,7 @@ describe("captureSnapshot", () => {
     const snapshot = await capture(repo);
     expect(snapshot.files).toEqual([]);
     expect(snapshot.skipped).toEqual([]);
+    expect(snapshot.gitEnv).toEqual({});
     expect(snapshot.diffBytes).toHaveLength(0);
     expect(snapshot.diffHash).toBe(createHash("sha256").update(Buffer.alloc(0)).digest("hex"));
   });
@@ -369,5 +371,31 @@ describe("captureSnapshot", () => {
     commitAll(join(repo, "vendor", "sub"), "s2");
 
     await expectUnsupported(repo, "submodule", ["vendor/sub"]);
+  });
+
+  it("ignores a submodule that is only dirty", async () => {
+    const upstream = newRepo();
+    writeFile(upstream, "s.txt", "s1\n");
+    commitAll(upstream, "s1");
+
+    const repo = newRepo();
+    writeFile(repo, "top.txt", "top\n");
+    commitAll(repo, "top");
+    gitOrThrow(repo, [
+      "-c",
+      "protocol.file.allow=always",
+      "submodule",
+      "add",
+      "-q",
+      upstream,
+      "vendor/sub",
+    ]);
+    commitAll(repo, "add submodule");
+    writeFile(join(repo, "vendor", "sub"), "untracked.txt", "u\n");
+    writeFile(join(repo, "vendor", "sub"), "s.txt", "s1 edited\n");
+    writeFile(repo, "top.txt", "top edited\n");
+
+    const snapshot = await captureSnapshot({ cwd: repo, git: createTestGitRunner() });
+    expect(snapshot.files.map((file) => file.path)).toEqual(["top.txt"]);
   });
 });

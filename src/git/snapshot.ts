@@ -27,6 +27,7 @@ export const DIFF_ARGS: readonly string[] = Object.freeze([
   "--no-ext-diff",
   "--no-textconv",
   "--no-renames",
+  "--ignore-submodules=dirty",
   "--unified=6",
   "--src-prefix=a/",
   "--dst-prefix=b/",
