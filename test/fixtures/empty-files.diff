@@ -1,0 +1,13 @@
+diff --git a/already-empty.txt b/already-empty.txt
+deleted file mode 100644
+index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..0000000000000000000000000000000000000000
+diff --git a/brand-new.txt b/brand-new.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/keep.txt b/keep.txt
+index 587be6b4c3f93f93c489c0111bba5596147a26cb..975fbec8256d3e8a3797e7a3611380f27c49f4ac 100644
+--- a/keep.txt
++++ b/keep.txt
+@@ -1 +1 @@
+-x
++y

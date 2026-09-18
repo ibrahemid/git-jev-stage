@@ -35,7 +35,6 @@ const BINARY_FILES_SUFFIX = " differ";
 const DEV_NULL = "/dev/null";
 const SYMLINK_MODE = "120000";
 const SUBMODULE_MODE = "160000";
-const SUBPROJECT_MARKERS = [" Subproject commit ", "+Subproject commit ", "-Subproject commit "];
 const SIDE_PREFIXES = ["a/", "b/"];
 const DIFF_GIT_PATHS_OVERHEAD = "a/ b/".length;
 const UNSUPPORTED_KIND_ORDER: UnsupportedEntryKind[] = ["binary", "symlink", "submodule"];
@@ -146,10 +145,6 @@ function parseSection(
   const path = resolvePath(diff, headerLine, meta);
   const hunkStarts = findHunkStarts(diff, lines, firstHunkLine, endLine);
   const hunks = buildHunks(diff, lines, hunkStarts, endLine, path);
-
-  if (hasSubprojectLines(diff, lines, firstHunkLine, endLine)) {
-    meta.submodule = true;
-  }
 
   const headerEnd =
     firstHunkLine < endLine ? (lines[firstHunkLine]?.start ?? lastLine.end) : lastLine.end;
@@ -339,19 +334,6 @@ function buildHunks(
   }
 
   return hunks;
-}
-
-function hasSubprojectLines(diff: Buffer, lines: Line[], from: number, to: number): boolean {
-  for (let index = from; index < to; index += 1) {
-    const line = lines[index];
-    if (line === undefined) {
-      continue;
-    }
-    if (SUBPROJECT_MARKERS.some((marker) => lineStartsWith(diff, line, marker))) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function assertByteExact(diff: Buffer, files: DiffFile[]): void {

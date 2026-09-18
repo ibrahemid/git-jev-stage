@@ -44,7 +44,7 @@ function hunkAt(file: DiffFile, ordinal: number) {
 
 describe("parseUnifiedDiffDetailed", () => {
   it("finds every fixture", () => {
-    expect(FIXTURES).toHaveLength(12);
+    expect(FIXTURES).toHaveLength(15);
   });
 
   it.each(FIXTURES)("partitions %s byte for byte", (name) => {
@@ -177,6 +177,25 @@ describe("paths", () => {
   });
 });
 
+describe("zero-hunk sections", () => {
+  it("keeps zero-byte added and deleted files as byte-exact sections", () => {
+    const diff = readFixture("empty-files.diff");
+    const parsed = parseUnifiedDiffDetailed(diff);
+
+    expect(parsed.unsupported).toEqual([]);
+    expect(parsed.files.map((file) => [file.path, file.kind, file.hunks.length])).toEqual([
+      ["already-empty.txt", "deleted", 0],
+      ["brand-new.txt", "added", 0],
+      ["keep.txt", "modified", 1],
+    ]);
+    expect(fileByPath(parsed.files, "brand-new.txt").headerBytes.toString("utf8")).toBe(
+      "diff --git a/brand-new.txt b/brand-new.txt\nnew file mode 100644\n" +
+        "index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391\n",
+    );
+    expect(reassemble(parsed.files).equals(diff)).toBe(true);
+  });
+});
+
 describe("unsupported entries", () => {
   it("reports binary files from both markers", () => {
     const parsed = parseUnifiedDiffDetailed(readFixture("binary.diff"));
@@ -198,6 +217,28 @@ describe("unsupported entries", () => {
   it("reports submodules", () => {
     const parsed = parseUnifiedDiffDetailed(readFixture("submodule.diff"));
     expect(parsed.unsupported).toEqual([{ path: "vendor/sub", kind: "submodule" }]);
+  });
+
+  it("parses a text file that quotes Subproject commit lines as a normal hunk", () => {
+    const parsed = parseUnifiedDiffDetailed(readFixture("subproject-text.diff"));
+
+    expect(parsed.unsupported).toEqual([]);
+    const file = fileByPath(parsed.files, "docs/notes.md");
+    expect(file.kind).toBe("modified");
+
+    const hunk = hunkAt(file, 0);
+    expect(hunk.added).toBe(2);
+    expect(hunk.removed).toBe(1);
+    expect(hunk.text).toContain("+Subproject commit 8888888888888888888888888888888888888888");
+  });
+
+  it("ignores mode lines that appear in hunk content", () => {
+    const parsed = parseUnifiedDiffDetailed(readFixture("mode-text-in-content.diff"));
+
+    expect(parsed.unsupported).toEqual([]);
+    const file = fileByPath(parsed.files, "docs/modes.md");
+    expect(file.kind).toBe("modified");
+    expect(hunkAt(file, 0).added).toBe(2);
   });
 
   it("throws one error per kind, binary first", () => {

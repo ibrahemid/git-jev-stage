@@ -34,12 +34,13 @@ export interface Snapshot {
   workTree: string;
   gitDir: string;
   indexPath: string;
+  gitEnv: Record<string, string>;
   headOid: string;
   indexHash: string;
   diffHash: string;
   diffBytes: Buffer;
   files: DiffFile[];
-  skipped: Array<{ path: string; reason: "mode-only" }>;
+  skipped: Array<{ path: string; reason: "mode-only" | "empty-file" }>;
 }
 
 export interface HunkDecision {

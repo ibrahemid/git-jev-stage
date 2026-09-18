@@ -6,7 +6,7 @@ import {
   UnmergedEntriesError,
   UnsupportedGitVersionError,
 } from "../errors.js";
-import type { Snapshot } from "../types.js";
+import type { FileKind, Snapshot } from "../types.js";
 import { hashBytes } from "./hash.js";
 import { buildUnsupportedEntryError, parseUnifiedDiffDetailed } from "./parseDiff.js";
 import { type GitRunner, runGitOrThrow } from "./runGit.js";
@@ -50,12 +50,13 @@ interface RepositoryLocations {
 }
 
 export async function captureSnapshot({ cwd, git }: CaptureSnapshotOptions): Promise<Snapshot> {
-  await assertSupportedGitVersion(git, cwd);
-  const locations = await resolveLocations(git, cwd);
-  const headOid = await resolveHeadOid(git, locations.workTree);
-  await assertNoUnmergedEntries(git, locations.workTree);
+  const gitEnv = resolveGitEnv();
+  await assertSupportedGitVersion(git, cwd, gitEnv);
+  const locations = await resolveLocations(git, cwd, gitEnv);
+  const headOid = await resolveHeadOid(git, locations.workTree, gitEnv);
+  await assertNoUnmergedEntries(git, locations.workTree, gitEnv);
 
-  const diff = await runGitOrThrow(git, [...DIFF_ARGS], { cwd: locations.workTree });
+  const diff = await runGitOrThrow(git, [...DIFF_ARGS], { cwd: locations.workTree, env: gitEnv });
   const diffBytes = diff.stdout;
   const parsed = parseUnifiedDiffDetailed(diffBytes);
 
@@ -68,19 +69,36 @@ export async function captureSnapshot({ cwd, git }: CaptureSnapshotOptions): Pro
     workTree: locations.workTree,
     gitDir: locations.gitDir,
     indexPath: locations.indexPath,
+    gitEnv,
     headOid,
     indexHash: hashBytes(readIndexBytes(locations.indexPath)),
     diffHash: hashBytes(diffBytes),
     diffBytes,
-    files: parsed.files.filter((file) => file.kind !== "mode-only"),
+    files: parsed.files.filter((file) => file.hunks.length > 0),
     skipped: parsed.files
-      .filter((file) => file.kind === "mode-only")
-      .map((file) => ({ path: file.path, reason: "mode-only" as const })),
+      .filter((file) => file.hunks.length === 0)
+      .map((file) => ({ path: file.path, reason: skippedReason(file.kind) })),
   };
 }
 
-async function assertSupportedGitVersion(git: GitRunner, cwd: string): Promise<void> {
-  const result = await runGitOrThrow(git, ["--version"], { cwd });
+function skippedReason(kind: FileKind): "mode-only" | "empty-file" {
+  return kind === "mode-only" ? "mode-only" : "empty-file";
+}
+
+function resolveGitEnv(): Record<string, string> {
+  const envIndex = process.env.GIT_INDEX_FILE;
+  if (envIndex === undefined || envIndex.length === 0) {
+    return {};
+  }
+  return { GIT_INDEX_FILE: resolve(process.cwd(), envIndex) };
+}
+
+async function assertSupportedGitVersion(
+  git: GitRunner,
+  cwd: string,
+  env: Record<string, string>,
+): Promise<void> {
+  const result = await runGitOrThrow(git, ["--version"], { cwd, env });
   const line = firstLine(result.stdout.toString("utf8"));
   const match = GIT_VERSION_LINE.exec(line);
   const major = Number(match?.[1]);
@@ -94,11 +112,16 @@ async function assertSupportedGitVersion(git: GitRunner, cwd: string): Promise<v
   }
 }
 
-async function resolveLocations(git: GitRunner, cwd: string): Promise<RepositoryLocations> {
+async function resolveLocations(
+  git: GitRunner,
+  cwd: string,
+  env: Record<string, string>,
+): Promise<RepositoryLocations> {
   const result = await git.run(
     ["rev-parse", "--show-toplevel", "--git-dir", "--git-path", "index"],
     {
       cwd,
+      env,
     },
   );
   if (result.exitCode !== 0) {
@@ -113,18 +136,19 @@ async function resolveLocations(git: GitRunner, cwd: string): Promise<Repository
     throw new NotARepositoryError();
   }
 
-  const envIndex = process.env.GIT_INDEX_FILE;
-  const indexSource = envIndex !== undefined && envIndex.length > 0 ? envIndex : indexFile;
-
   return {
     workTree: resolve(cwd, workTree),
     gitDir: resolve(cwd, gitDir),
-    indexPath: resolve(cwd, indexSource),
+    indexPath: env.GIT_INDEX_FILE ?? resolve(cwd, indexFile),
   };
 }
 
-async function resolveHeadOid(git: GitRunner, cwd: string): Promise<string> {
-  const result = await git.run(["rev-parse", "--verify", "HEAD"], { cwd });
+async function resolveHeadOid(
+  git: GitRunner,
+  cwd: string,
+  env: Record<string, string>,
+): Promise<string> {
+  const result = await git.run(["rev-parse", "--verify", "HEAD"], { cwd, env });
   const oid = result.stdout.toString("utf8").trim();
   if (result.exitCode !== 0 || oid.length === 0) {
     throw new UnbornRepositoryError();
@@ -132,8 +156,12 @@ async function resolveHeadOid(git: GitRunner, cwd: string): Promise<string> {
   return oid;
 }
 
-async function assertNoUnmergedEntries(git: GitRunner, cwd: string): Promise<void> {
-  const result = await runGitOrThrow(git, ["ls-files", "-u", "-z"], { cwd });
+async function assertNoUnmergedEntries(
+  git: GitRunner,
+  cwd: string,
+  env: Record<string, string>,
+): Promise<void> {
+  const result = await runGitOrThrow(git, ["ls-files", "-u", "-z"], { cwd, env });
   if (result.stdout.length === 0) {
     return;
   }
@@ -155,7 +183,7 @@ async function assertNoUnmergedEntries(git: GitRunner, cwd: string): Promise<voi
   }
 }
 
-function readIndexBytes(indexPath: string): Buffer {
+export function readIndexBytes(indexPath: string): Buffer {
   try {
     return readFileSync(indexPath);
   } catch (error) {

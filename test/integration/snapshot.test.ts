@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, readFileSync, rmSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, copyFileSync, mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   NotARepositoryError,
@@ -177,6 +177,56 @@ describe("captureSnapshot", () => {
     expect(snapshot.diffBytes.toString("utf8")).toContain("new mode 100755");
   });
 
+  it("reports zero-byte added and deleted files as skipped", async () => {
+    const repo = newRepo();
+    writeFile(repo, "keep.txt", "x\n");
+    writeFile(repo, "already-empty.txt", "");
+    commitAll(repo, "init");
+    writeFile(repo, "keep.txt", "y\n");
+    rmSync(join(repo, "already-empty.txt"));
+    writeFile(repo, "brand-new.txt", "");
+    gitOrThrow(repo, ["add", "-N", "brand-new.txt"]);
+
+    const snapshot = await capture(repo);
+    const fresh = git(repo, [...DIFF_ARGS]);
+    expect(snapshot.diffBytes.equals(fresh.stdout)).toBe(true);
+    expect(paths(snapshot)).toEqual(["keep.txt"]);
+    expect(snapshot.skipped).toEqual([
+      { path: "already-empty.txt", reason: "empty-file" },
+      { path: "brand-new.txt", reason: "empty-file" },
+    ]);
+    expect(snapshot.files.every((file) => file.hunks.length > 0)).toBe(true);
+  });
+
+  it("parses a text file that quotes Subproject commit lines", async () => {
+    const repo = newRepo();
+    const before = [
+      "git submodule status prints:",
+      "Subproject commit 6666666666666666666666666666666666666666",
+      "end of example",
+      "",
+    ].join("\n");
+    writeFile(repo, "README.md", before);
+    commitAll(repo, "init");
+    writeFile(
+      repo,
+      "README.md",
+      before.replace(
+        "6666666666666666666666666666666666666666",
+        "7777777777777777777777777777777777777777",
+      ),
+    );
+
+    const snapshot = await capture(repo);
+    expect(paths(snapshot)).toEqual(["README.md"]);
+    expect(snapshot.skipped).toEqual([]);
+
+    const file = fileByPath(snapshot, "README.md");
+    expect(file.kind).toBe("modified");
+    expect(file.hunks[0]?.added).toBe(1);
+    expect(file.hunks[0]?.removed).toBe(1);
+  });
+
   it("round-trips a CRLF work file under .gitattributes text=auto", async () => {
     const repo = newRepo();
     writeFile(repo, ".gitattributes", "* text=auto\n");
@@ -207,10 +257,40 @@ describe("captureSnapshot", () => {
 
     const snapshot = await capture(repo);
     expect(snapshot.indexPath).toBe(alternate);
+    expect(snapshot.gitEnv).toEqual({ GIT_INDEX_FILE: alternate });
     expect(snapshot.indexHash).toBe(
       createHash("sha256").update(readFileSync(alternate)).digest("hex"),
     );
     expect(paths(snapshot)).toEqual(["a.txt"]);
+  });
+
+  it("resolves a relative GIT_INDEX_FILE against the process cwd", async () => {
+    const repo = newRepo();
+    writeFile(repo, "a.txt", "a\n");
+    commitAll(repo, "init");
+    writeFile(repo, "a.txt", "b\n");
+    // deeper than process.cwd(), so a "../"-prefixed value cannot resolve alike from both bases
+    const segments = Array.from({ length: process.cwd().split(sep).length }, (_, i) => `d${i}`);
+    const nested = join(repo, ...segments);
+    mkdirSync(nested, { recursive: true });
+
+    const alternate = join(newDir(), "alternate-index");
+    copyFileSync(join(repo, ".git", "index"), alternate);
+    process.env.GIT_INDEX_FILE = alternate;
+    writeFile(repo, "staged.txt", "s\n");
+    gitOrThrow(repo, ["add", "staged.txt"]);
+    const expectedHash = createHash("sha256").update(readFileSync(alternate)).digest("hex");
+    const absolute = await capture(nested);
+
+    process.env.GIT_INDEX_FILE = relative(process.cwd(), alternate);
+    const snapshot = await capture(nested);
+
+    expect(snapshot.indexPath).toBe(alternate);
+    expect(snapshot.gitEnv).toEqual({ GIT_INDEX_FILE: alternate });
+    expect(snapshot.indexHash).toBe(expectedHash);
+    expect(snapshot.indexHash).toBe(absolute.indexHash);
+    expect(snapshot.indexHash).not.toBe(createHash("sha256").update(Buffer.alloc(0)).digest("hex"));
+    expect(snapshot.diffHash).toBe(absolute.diffHash);
   });
 
   it("rejects an unborn repository", async () => {
