@@ -1,6 +1,6 @@
 {
   "name": "git-jev-stage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Select Git changes for staging with a plain-language description.",
   "keywords": [
     "git",
