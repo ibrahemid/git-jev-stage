@@ -1,6 +1,9 @@
 {
   "name": "git-jev-stage",
-  "owner": { "name": "Ibrahem" },
+  "owner": {
+    "name": "Ibrahem"
+  },
+  "description": "Select Git changes for staging with a plain-language description.",
   "plugins": [
     {
       "name": "git-jev-stage",
