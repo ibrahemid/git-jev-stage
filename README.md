@@ -1,6 +1,6 @@
 # git-jev-stage
 
-Describe the change to stage in one sentence. git-jev-stage classifies each block of changed lines (a Git hunk), shows the plan, and stages the selected blocks after confirmation. It never commits, never edits working files, and never generates a commit message.
+Describe the change to stage in one sentence. git-jev-stage classifies each block of changed lines (a Git hunk), shows the plan, and stages the selected blocks after confirmation. It only stages. Working files stay as they are, and the commit and its message are yours to write.
 
 ```sh
 git jev-stage "only the auth fix and its tests"

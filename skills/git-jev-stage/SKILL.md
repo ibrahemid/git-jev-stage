@@ -4,7 +4,7 @@ description: Stage Git changes selected by a plain-language description, with gi
 allowed-tools: Bash(git jev-stage *) Bash(git-jev-stage *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git add *)
 ---
 
-`git jev-stage "<sentence>"` asks Jev to classify every unstaged hunk. In interactive mode, it stages selected hunks after confirmation, with separate questions for `mixed` or low-confidence decisions. With `--yes`, it stages accepted `include` decisions and leaves `mixed` hunks unstaged. It never commits, never edits working files, and never generates a commit message.
+`git jev-stage "<sentence>"` asks Jev to classify every unstaged hunk. In interactive mode, it stages selected hunks after confirmation, with separate questions for `mixed` or low-confidence decisions. With `--yes`, it stages accepted `include` decisions and leaves `mixed` hunks unstaged. It only stages: working files stay untouched, and the commit and its message are left to the caller.
 
 ## Steps
 
