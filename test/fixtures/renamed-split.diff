@@ -1,0 +1,18 @@
+diff --git a/src/deliver.ts b/src/deliver.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f4a3f821c0ae356a1887d5b14a76531b4c608083
+--- /dev/null
++++ b/src/deliver.ts
+@@ -0,0 +1,3 @@
++export function ship(payload) {
++  return send(payload);
++}
+diff --git a/src/ship.ts b/src/ship.ts
+deleted file mode 100644
+index f4a3f821c0ae356a1887d5b14a76531b4c608083..0000000000000000000000000000000000000000
+--- a/src/ship.ts
++++ /dev/null
+@@ -1,3 +0,0 @@
+-export function ship(payload) {
+-  return send(payload);
+-}

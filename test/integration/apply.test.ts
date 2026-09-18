@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   copyFileSync,
@@ -554,6 +555,81 @@ describe("applySelection", () => {
     expect(leftovers(snapshot.indexPath)).toEqual([]);
   });
 });
+
+describe("abandoned temp indexes", () => {
+  it("removes the leftovers of processes that are gone and keeps the rest", async () => {
+    const repo = demoRepo();
+    const snapshot = await demoSnapshot(repo);
+    const auth = hunkAt(snapshot, LOGIN_PATH, 0);
+    const dead = `${snapshot.indexPath}.jev-stage-${deadPid()}-0123456789abcdef`;
+    const mine = `${snapshot.indexPath}.jev-stage-${process.pid}-fedcba9876543210`;
+    const foreign = `${snapshot.indexPath}.jev-stage-notapid-0123456789abcdef`;
+    writeFileSync(dead, "abandoned\n");
+    writeFileSync(mine, "in flight\n");
+    writeFileSync(foreign, "not ours\n");
+
+    await stage(snapshot, [auth.id]);
+
+    expect(existsSync(dead)).toBe(false);
+    expect(readFileSync(mine).toString("utf8")).toBe("in flight\n");
+    expect(readFileSync(foreign).toString("utf8")).toBe("not ours\n");
+    expect(diffBytes(repo, ["--cached"]).includes(hunkBody(auth))).toBe(true);
+  });
+
+  it("never touches the index lock", async () => {
+    const repo = demoRepo();
+    const snapshot = await demoSnapshot(repo);
+    const auth = hunkAt(snapshot, LOGIN_PATH, 0);
+    const lockPath = `${snapshot.indexPath}.lock`;
+    const dead = `${snapshot.indexPath}.jev-stage-${deadPid()}-00112233445566aa`;
+    writeFileSync(lockPath, "held by another git process\n");
+    writeFileSync(dead, "abandoned\n");
+
+    const error = await rejection(stage(snapshot, [auth.id]));
+
+    expect(error).toBeInstanceOf(IndexLockedError);
+    expect(readFileSync(lockPath).toString("utf8")).toBe("held by another git process\n");
+    expect(leftovers(snapshot.indexPath)).toEqual([basename(lockPath)]);
+  });
+
+  it("sweeps beside the index it was given and nowhere else", async () => {
+    const repo = demoRepo();
+    const alternate = join(newDir(), "alternate-index");
+    copyFileSync(join(repo, ".git", "index"), alternate);
+    process.env.GIT_INDEX_FILE = alternate;
+    const pid = deadPid();
+    const nextToAlternate = `${alternate}.jev-stage-${pid}-0123456789abcdef`;
+    const nextToReal = join(repo, ".git", `index.jev-stage-${pid}-0123456789abcdef`);
+    writeFileSync(nextToAlternate, "abandoned\n");
+    writeFileSync(nextToReal, "abandoned elsewhere\n");
+
+    const snapshot = await capture(repo);
+    expect(snapshot.indexPath).toBe(alternate);
+    await stage(snapshot, [hunkAt(snapshot, LOGIN_PATH, 0).id]);
+
+    expect(existsSync(nextToAlternate)).toBe(false);
+    expect(readFileSync(nextToReal).toString("utf8")).toBe("abandoned elsewhere\n");
+  });
+});
+
+function deadPid(): number {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const { pid } = spawnSync(process.execPath, ["-e", ""]);
+    if (Number.isSafeInteger(pid) && pid > 0 && !isAlive(pid)) {
+      return pid;
+    }
+  }
+  throw new Error("no exited process id was available");
+}
+
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return !(error instanceof Error && "code" in error && error.code === "ESRCH");
+  }
+}
 
 function sortedNfc(paths: readonly string[]): string[] {
   return paths.map((path) => path.normalize("NFC")).sort();

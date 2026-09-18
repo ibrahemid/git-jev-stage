@@ -44,7 +44,7 @@ function hunkAt(file: DiffFile, ordinal: number) {
 
 describe("parseUnifiedDiffDetailed", () => {
   it("finds every fixture", () => {
-    expect(FIXTURES).toHaveLength(15);
+    expect(FIXTURES).toHaveLength(18);
   });
 
   it.each(FIXTURES)("partitions %s byte for byte", (name) => {
@@ -105,6 +105,21 @@ describe("hunks", () => {
     expect(hunk.header).toBe("@@ -1,3 +1,3 @@");
     expect(hunk.added).toBe(1);
     expect(hunk.removed).toBe(1);
+  });
+
+  it("keeps a wanted and an unwanted change in one hunk", () => {
+    const files = parseUnifiedDiff(readFixture("interleaved-hunk.diff"));
+    const file = fileByPath(files, "src/session.ts");
+
+    expect(file.kind).toBe("modified");
+    expect(file.hunks).toHaveLength(1);
+
+    const hunk = hunkAt(file, 0);
+    expect(hunk.header).toBe("@@ -1,7 +1,8 @@");
+    expect(hunk.added).toBe(2);
+    expect(hunk.removed).toBe(1);
+    expect(hunk.text).toContain("+  if (!user || !user.active) return res.status(401).end();");
+    expect(hunk.text).toContain('+  console.log("open", req.body.email);');
   });
 
   it("keeps the no-newline marker inside the hunk and out of the counts", () => {
@@ -174,6 +189,38 @@ describe("paths", () => {
     expect(file.kind).toBe("added");
     expect(hunkAt(file, 0).added).toBe(3);
     expect(hunkAt(file, 0).removed).toBe(0);
+  });
+});
+
+describe("renames", () => {
+  it("reads a rename as a deletion and an addition", () => {
+    const files = parseUnifiedDiff(readFixture("renamed-split.diff"));
+
+    expect(files.map((file) => ({ path: file.path, kind: file.kind }))).toEqual([
+      { path: "src/deliver.ts", kind: "added" },
+      { path: "src/ship.ts", kind: "deleted" },
+    ]);
+
+    const added = hunkAt(fileByPath(files, "src/deliver.ts"), 0);
+    const deleted = hunkAt(fileByPath(files, "src/ship.ts"), 0);
+    expect(added.header).toBe("@@ -0,0 +1,3 @@");
+    expect([added.added, added.removed]).toEqual([3, 0]);
+    expect(deleted.header).toBe("@@ -1,3 +0,0 @@");
+    expect([deleted.added, deleted.removed]).toEqual([0, 3]);
+    expect(added.id).not.toBe(deleted.id);
+  });
+
+  it("reads a rename that changed content", () => {
+    const files = parseUnifiedDiff(readFixture("renamed-edited.diff"));
+
+    expect(files.map((file) => file.path)).toEqual(["src/jobs.ts", "src/queue.ts"]);
+
+    const added = hunkAt(fileByPath(files, "src/jobs.ts"), 0);
+    const deleted = hunkAt(fileByPath(files, "src/queue.ts"), 0);
+    expect([added.added, added.removed]).toEqual([4, 0]);
+    expect([deleted.added, deleted.removed]).toEqual([0, 4]);
+    expect(added.text).toContain("+  jobs.push({ ...job, at: Date.now() });");
+    expect(deleted.text).toContain("-  jobs.push(job);");
   });
 });
 

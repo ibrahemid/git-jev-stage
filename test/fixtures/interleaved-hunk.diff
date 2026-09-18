@@ -1,0 +1,14 @@
+diff --git a/src/session.ts b/src/session.ts
+index ab01a534b342b3f3519806a17ea710249f25cd28..f41f986c6039f67f34ef1ac782d03244ae01f4bb 100644
+--- a/src/session.ts
++++ b/src/session.ts
+@@ -1,7 +1,8 @@
+ import { findUser } from "./service";
+ 
+ export function open(req, res) {
+   const user = findUser(req.body.email);
+-  if (!user) return res.status(401).end();
++  if (!user || !user.active) return res.status(401).end();
++  console.log("open", req.body.email);
+   return res.json({ id: user.id });
+ }
