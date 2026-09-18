@@ -159,7 +159,9 @@ describe("error messages", () => {
   it("defaults the messages that have no caller text", () => {
     expect(new NotARepositoryError().message).toBe("not a git repository");
     expect(new UnbornRepositoryError().message).toBe("the repository has no commits yet");
-    expect(new MissingApiKeyError().message).toBe("TYPESAFE_API_KEY is not set");
+    expect(new MissingApiKeyError().message).toBe(
+      "TYPESAFE_API_KEY is not set. Set an early-access key from typesafe.ai, or rerun in an interactive terminal without --json or --yes to select hunks by hand.",
+    );
   });
 
   it("names the found and required git versions", () => {

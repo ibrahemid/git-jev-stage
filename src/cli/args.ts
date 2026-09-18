@@ -35,10 +35,11 @@ export function usageText(): string {
   return [
     'usage: git jev-stage "<sentence>" [options]',
     "",
-    "Stages the unstaged hunks that match the sentence.",
+    "Classifies every unstaged hunk against the sentence and stages the selected",
+    "hunks after confirmation.",
     "",
     "options:",
-    '  --exclude "<sentence>"  never stage hunks that match this sentence',
+    '  --exclude "<sentence>"  describes changes to classify as out of scope',
     "  --threshold <n>         confidence needed to stage or skip a hunk, 0-1 (default 0.6)",
     "  --dry-run               print the plan and the composed patch, stage nothing",
     "  --yes                   skip prompts and leave mixed hunks unstaged",

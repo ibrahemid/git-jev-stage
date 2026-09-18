@@ -97,7 +97,8 @@ describe("manual fallback", () => {
 
     await expect(run([INTENT, "--json"], io.io)).resolves.toBe(1);
 
-    expect(io.stderr()).toBe("git-jev-stage: missing-api-key: TYPESAFE_API_KEY is not set\n");
+    expect(io.stderr()).toContain("git-jev-stage: missing-api-key: TYPESAFE_API_KEY is not set.");
+    expect(io.stderr()).toContain("rerun in an interactive terminal without --json or --yes");
   });
 });
 

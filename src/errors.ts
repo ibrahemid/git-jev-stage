@@ -136,7 +136,10 @@ export class IndexLockedError extends JevStageError {
 export class MissingApiKeyError extends JevStageError {
   readonly code = "missing-api-key";
 
-  constructor(message = "TYPESAFE_API_KEY is not set", options?: ErrorOptions) {
+  constructor(
+    message = "TYPESAFE_API_KEY is not set. Set an early-access key from typesafe.ai, or rerun in an interactive terminal without --json or --yes to select hunks by hand.",
+    options?: ErrorOptions,
+  ) {
     super(message, options);
     this.name = "MissingApiKeyError";
   }
