@@ -1,11 +1,6 @@
 export type UnsupportedEntryKind = "symlink" | "submodule" | "binary";
 export type StaleSnapshotWhich = "head" | "index" | "diff";
 
-export interface ProviderErrorOptions extends ErrorOptions {
-  status?: number;
-  requestId?: string;
-}
-
 export abstract class JevStageError extends Error {
   abstract readonly code: string;
   readonly exitCode: number = 1;
@@ -85,6 +80,17 @@ export class DiffParseError extends JevStageError {
   }
 }
 
+export class UnknownHunkError extends JevStageError {
+  readonly code = "unknown-hunk";
+  readonly ids: readonly string[];
+
+  constructor(ids: readonly string[], options?: ErrorOptions) {
+    super(`no hunk matches the selected ids: ${ids.join(", ")}`, options);
+    this.name = "UnknownHunkError";
+    this.ids = [...ids];
+  }
+}
+
 export class PatchApplyError extends JevStageError {
   readonly code = "patch-apply";
   readonly stderr: string;
@@ -133,19 +139,6 @@ export class MissingApiKeyError extends JevStageError {
   constructor(message = "TYPESAFE_API_KEY is not set", options?: ErrorOptions) {
     super(message, options);
     this.name = "MissingApiKeyError";
-  }
-}
-
-export class ProviderError extends JevStageError {
-  readonly code = "provider";
-  readonly status: number | undefined;
-  readonly requestId: string | undefined;
-
-  constructor(message: string, options?: ProviderErrorOptions) {
-    super(message, options);
-    this.name = "ProviderError";
-    this.status = options?.status;
-    this.requestId = options?.requestId;
   }
 }
 
