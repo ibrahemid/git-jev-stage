@@ -1,7 +1,7 @@
 {
   "name": "git-jev-stage",
   "version": "0.1.1",
-  "description": "Select Git changes for staging with a plain-language description.",
+  "description": "Select Git changes for staging with a plain-language description. Jev selection requires a TypeSafe early-access waitlist key.",
   "keywords": [
     "git",
     "staging",
